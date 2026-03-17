@@ -49,6 +49,7 @@ const menuItems = [
   { title: "POS System", url: "/pos", icon: Monitor },
   { title: "Kitchen Display", url: "/kitchen-display", icon: ChefHat },
   { title: "Delivery Management", url: "/delivery", icon: Truck },
+  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
