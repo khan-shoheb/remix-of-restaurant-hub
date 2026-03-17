@@ -1,31 +1,23 @@
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
-  Wallet,
-  Receipt,
-  ListTodo,
-  UtensilsCrossed,
-  ShoppingCart,
-  Package,
-  Users,
+  Building2,
+  CreditCard,
   BarChart3,
-  BookOpen,
-  Grid3X3,
-  CalendarCheck,
-  Monitor,
-  ChefHat,
-  Truck,
+  Users,
+  TrendingUp,
+  Settings,
+  HeadphonesIcon,
   LogOut,
+  UtensilsCrossed,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -34,24 +26,17 @@ import {
 } from "@/components/ui/sidebar";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Payroll", url: "/payroll", icon: Wallet },
-  { title: "Billing", url: "/billing", icon: Receipt },
-  { title: "Tasks", url: "/tasks", icon: ListTodo },
-  { title: "Menu Management", url: "/menu-management", icon: UtensilsCrossed },
-  { title: "Orders", url: "/orders", icon: ShoppingCart },
-  { title: "Inventory", url: "/inventory", icon: Package },
-  { title: "CRM", url: "/crm", icon: Users },
-  { title: "Reports", url: "/reports", icon: BarChart3 },
-  { title: "Recipe Management", url: "/recipe-management", icon: BookOpen },
-  { title: "Table Management", url: "/table-management", icon: Grid3X3 },
-  { title: "Reservation", url: "/reservation", icon: CalendarCheck },
-  { title: "POS System", url: "/pos", icon: Monitor },
-  { title: "Kitchen Display", url: "/kitchen-display", icon: ChefHat },
-  { title: "Delivery Management", url: "/delivery", icon: Truck },
+  { title: "Dashboard", url: "/superadmin-dashboard", icon: LayoutDashboard },
+  { title: "Restaurants", url: "/superadmin-restaurants", icon: Building2 },
+  { title: "Subscriptions", url: "/superadmin-subscriptions", icon: CreditCard },
+  { title: "Revenue", url: "/superadmin-revenue", icon: TrendingUp },
+  { title: "Users", url: "/superadmin-users", icon: Users },
+  { title: "Analytics", url: "/superadmin-analytics", icon: BarChart3 },
+  { title: "System Settings", url: "/superadmin-settings", icon: Settings },
+  { title: "Support", url: "/superadmin-support", icon: HeadphonesIcon },
 ];
 
-export function AppSidebar() {
+export function SuperAdminSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
@@ -66,43 +51,34 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarContent className="pt-4">
-        {/* Logo */}
         <div className="flex items-center gap-3 px-4 pb-4 border-b border-sidebar-border mb-2">
-          <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
-            <UtensilsCrossed className="w-5 h-5 text-sidebar-primary-foreground" />
+          <div className="w-9 h-9 rounded-lg bg-destructive flex items-center justify-center shrink-0">
+            <UtensilsCrossed className="w-5 h-5 text-primary-foreground" />
           </div>
           {!collapsed && (
             <div>
-              <h2 className="text-sm font-bold text-sidebar-accent-foreground tracking-wide font-display">
-                RestroHub
+              <h2 className="text-sm font-bold text-destructive tracking-wide font-display">
+                Super Admin
               </h2>
               <p className="text-[10px] text-sidebar-foreground uppercase tracking-widest">
-                Management
+                Control Panel
               </p>
             </div>
           )}
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-sidebar-foreground/50 font-body">
-            Main Menu
-          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    isActive={
-                      item.url === "/"
-                        ? location.pathname === "/"
-                        : location.pathname.startsWith(item.url)
-                    }
+                    isActive={location.pathname === item.url}
                     tooltip={item.title}
                   >
                     <NavLink
                       to={item.url}
-                      end={item.url === "/"}
                       className="transition-all duration-200"
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
                     >
@@ -122,12 +98,12 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              tooltip="Admin Logout"
+              tooltip="Logout"
               className="text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               <button className="w-full flex items-center gap-2" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 shrink-0" />
-                {!collapsed && <span>Admin Logout</span>}
+                {!collapsed && <span>Logout</span>}
               </button>
             </SidebarMenuButton>
           </SidebarMenuItem>
