@@ -1,19 +1,33 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { UtensilsCrossed, Eye, EyeOff } from "lucide-react";
+import { UtensilsCrossed, Eye, EyeOff, Shield, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 
+const roles = [
+  { key: "admin" as const, label: "Admin", icon: User, email: "admin@demo.com", password: "admin123" },
+  { key: "superadmin" as const, label: "Super Admin", icon: Shield, email: "superadmin@restrohub.local", password: "super123" },
+];
+
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [activeRole, setActiveRole] = useState<"admin" | "superadmin">("admin");
+  const [email, setEmail] = useState("admin@demo.com");
+  const [password, setPassword] = useState("admin123");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  const handleToggle = (role: "admin" | "superadmin") => {
+    setActiveRole(role);
+    const r = roles.find((r) => r.key === role)!;
+    setEmail(r.email);
+    setPassword(r.password);
+    setError("");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +35,6 @@ export default function Login() {
     if (err) {
       setError(err);
     } else {
-      // Role-based redirect handled by App.tsx
       if (email.includes("superadmin")) {
         navigate("/superadmin-dashboard");
       } else {
@@ -44,6 +57,24 @@ export default function Login() {
             </div>
             <h1 className="text-2xl font-bold font-display text-foreground">RestroHub</h1>
             <p className="text-sm text-muted-foreground mt-1">Sign in to your account</p>
+          </div>
+
+          {/* Toggle buttons */}
+          <div className="flex rounded-xl bg-secondary p-1 mb-6">
+            {roles.map((role) => (
+              <button
+                key={role.key}
+                onClick={() => handleToggle(role.key)}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  activeRole === role.key
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <role.icon className="w-4 h-4" />
+                {role.label}
+              </button>
+            ))}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -85,24 +116,14 @@ export default function Login() {
             )}
 
             <Button type="submit" className="w-full">
-              Sign In
+              Sign In as {activeRole === "admin" ? "Admin" : "Super Admin"}
             </Button>
           </form>
 
           <div className="mt-6 pt-6 border-t border-border">
-            <p className="text-xs text-muted-foreground text-center mb-3">Demo Credentials</p>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="bg-secondary rounded-lg p-3">
-                <p className="font-semibold text-foreground mb-1">Admin</p>
-                <p className="text-muted-foreground">admin@demo.com</p>
-                <p className="text-muted-foreground">admin123</p>
-              </div>
-              <div className="bg-secondary rounded-lg p-3">
-                <p className="font-semibold text-foreground mb-1">Super Admin</p>
-                <p className="text-muted-foreground">superadmin@restrohub.local</p>
-                <p className="text-muted-foreground">super123</p>
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Toggle above to switch between <span className="font-semibold text-foreground">Admin</span> and <span className="font-semibold text-foreground">Super Admin</span> login
+            </p>
           </div>
         </div>
       </motion.div>
