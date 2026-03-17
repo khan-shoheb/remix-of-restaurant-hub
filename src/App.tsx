@@ -63,6 +63,7 @@ function AppRoutes() {
       <Route path="/pos" element={<ProtectedRoute role="admin"><POS /></ProtectedRoute>} />
       <Route path="/kitchen-display" element={<ProtectedRoute role="admin"><KitchenDisplay /></ProtectedRoute>} />
       <Route path="/delivery" element={<ProtectedRoute role="admin"><Delivery /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
 
       {/* Super Admin routes */}
       <Route path="/superadmin-dashboard" element={<ProtectedRoute role="superadmin"><SADashboard /></ProtectedRoute>} />

@@ -16,6 +16,7 @@ import {
   Monitor,
   ChefHat,
   Truck,
+  Settings,
   LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
