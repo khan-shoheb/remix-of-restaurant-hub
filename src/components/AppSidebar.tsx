@@ -125,7 +125,7 @@ export function AppSidebar() {
               tooltip="Admin Logout"
               className="text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
-              <button className="w-full flex items-center gap-2" onClick={() => alert("Logged out!")}>
+              <button className="w-full flex items-center gap-2" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 shrink-0" />
                 {!collapsed && <span>Admin Logout</span>}
               </button>
