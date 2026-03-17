@@ -20,6 +20,7 @@ import Reservation from "./pages/Reservation";
 import POS from "./pages/POS";
 import KitchenDisplay from "./pages/KitchenDisplay";
 import Delivery from "./pages/Delivery";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import SADashboard from "./pages/superadmin/SADashboard";
 import SARestaurants from "./pages/superadmin/SARestaurants";
