@@ -3,8 +3,12 @@ import { motion } from "framer-motion";
 import { CalendarCheck, Plus, Search, Phone, Clock, Users, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
+import { toast } from "sonner";
 
-const reservations = [
+const initialReservations = [
   { id: 1, name: "Mohit Agarwal", phone: "9876500003", guests: 4, date: "14 Mar 2026", time: "7:00 PM", table: "T-6", status: "Confirmed", note: "Anniversary dinner" },
   { id: 2, name: "Sneha Iyer", phone: "9876500004", guests: 2, date: "14 Mar 2026", time: "8:00 PM", table: "T-1", status: "Pending", note: "" },
   { id: 3, name: "Arjun Mehta", phone: "9876500001", guests: 6, date: "14 Mar 2026", time: "8:30 PM", table: "T-7", status: "Confirmed", note: "Birthday party" },
@@ -20,6 +24,45 @@ const statusColor: Record<string, string> = {
 };
 
 export default function Reservation() {
+  const [reservations, setReservations] = useState(initialReservations);
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", phone: "", guests: "2", date: "", time: "", table: "", note: "" });
+
+  const filtered = reservations.filter((r) => r.name.toLowerCase().includes(search.toLowerCase()) || r.phone.includes(search));
+
+  const handleConfirm = (id: number) => {
+    setReservations((prev) => prev.map((r) => r.id === id ? { ...r, status: "Confirmed" } : r));
+    toast.success("Reservation confirmed!");
+  };
+
+  const handleCancel = (id: number) => {
+    setReservations((prev) => prev.map((r) => r.id === id ? { ...r, status: "Cancelled" } : r));
+    toast.error("Reservation cancelled");
+  };
+
+  const handleAdd = () => {
+    if (!form.name || !form.phone || !form.date || !form.time) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+    const newRes = {
+      id: Date.now(),
+      name: form.name,
+      phone: form.phone,
+      guests: parseInt(form.guests) || 2,
+      date: form.date,
+      time: form.time,
+      table: form.table || "TBD",
+      status: "Pending",
+      note: form.note,
+    };
+    setReservations((prev) => [newRes, ...prev]);
+    setForm({ name: "", phone: "", guests: "2", date: "", time: "", table: "", note: "" });
+    setOpen(false);
+    toast.success("Reservation added successfully!");
+  };
+
   return (
     <DashboardLayout>
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
@@ -31,11 +74,36 @@ export default function Reservation() {
               <p className="text-sm text-muted-foreground">Manage table bookings and reservations</p>
             </div>
           </div>
-          <Button size="sm"><Plus className="w-4 h-4 mr-1" />New Reservation</Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm"><Plus className="w-4 h-4 mr-1" />New Reservation</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>New Reservation</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div><Label>Name *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Guest name" /></div>
+                <div><Label>Phone *</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone number" /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Date *</Label><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
+                  <div><Label>Time *</Label><Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Guests</Label><Input type="number" value={form.guests} onChange={(e) => setForm({ ...form, guests: e.target.value })} /></div>
+                  <div><Label>Table</Label><Input value={form.table} onChange={(e) => setForm({ ...form, table: e.target.value })} placeholder="e.g. T-5" /></div>
+                </div>
+                <div><Label>Note</Label><Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Special request" /></div>
+                <Button className="w-full" onClick={handleAdd}>Add Reservation</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          {[{ label: "Today's Bookings", value: "3" }, { label: "Tomorrow", value: "3" }, { label: "Total Guests Expected", value: "26" }].map((s) => (
+          {[
+            { label: "Today's Bookings", value: reservations.filter((r) => r.status !== "Cancelled").length.toString() },
+            { label: "Pending", value: reservations.filter((r) => r.status === "Pending").length.toString() },
+            { label: "Total Guests Expected", value: reservations.filter((r) => r.status !== "Cancelled").reduce((s, r) => s + r.guests, 0).toString() },
+          ].map((s) => (
             <div key={s.label} className="bg-card rounded-xl p-4 shadow-card border border-border">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">{s.label}</p>
               <p className="text-xl font-bold font-display text-foreground mt-1">{s.value}</p>
@@ -46,12 +114,12 @@ export default function Reservation() {
         <div className="flex items-center gap-3 mb-4">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search reservations..." className="pl-9" />
+            <Input placeholder="Search reservations..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
 
         <div className="space-y-3">
-          {reservations.map((r, i) => (
+          {filtered.map((r, i) => (
             <motion.div key={r.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} className="bg-card rounded-xl p-4 shadow-card border border-border hover:shadow-elevated transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -68,8 +136,8 @@ export default function Reservation() {
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[r.status]}`}>{r.status}</span>
                   {r.status === "Pending" && (
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600"><Check className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><X className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" onClick={() => handleConfirm(r.id)}><Check className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleCancel(r.id)}><X className="w-4 h-4" /></Button>
                     </div>
                   )}
                 </div>

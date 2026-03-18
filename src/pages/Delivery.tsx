@@ -1,29 +1,21 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
-import { Truck, Search, Phone, MapPin, Clock, Package, CheckCircle2, Navigation } from "lucide-react";
+import { Truck, Search, Phone, MapPin, Clock, Package, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { useState } from "react";
+import { toast } from "sonner";
 
 type DeliveryStatus = "Preparing" | "Picked Up" | "On the Way" | "Delivered" | "Cancelled";
 
 interface DeliveryOrder {
-  id: string;
-  customer: string;
-  phone: string;
-  address: string;
-  items: number;
-  total: string;
-  rider: string;
-  riderPhone: string;
-  status: DeliveryStatus;
-  orderTime: string;
-  estimatedTime: string;
-  progress: number;
+  id: string; customer: string; phone: string; address: string; items: number;
+  total: string; rider: string; riderPhone: string; status: DeliveryStatus;
+  orderTime: string; estimatedTime: string; progress: number;
 }
 
-const deliveries: DeliveryOrder[] = [
+const initialDeliveries: DeliveryOrder[] = [
   { id: "DEL-045", customer: "Rahul Verma", phone: "9876501001", address: "Sec 45, Block C, Noida", items: 3, total: "₹980", rider: "Vikram", riderPhone: "9876543214", status: "On the Way", orderTime: "1:00 PM", estimatedTime: "1:35 PM", progress: 70 },
   { id: "DEL-046", customer: "Meena Das", phone: "9876501002", address: "MG Road, Near Metro Station", items: 5, total: "₹2,100", rider: "Sanjay", riderPhone: "9876501010", status: "Picked Up", orderTime: "1:15 PM", estimatedTime: "1:55 PM", progress: 40 },
   { id: "DEL-047", customer: "Karan Malhotra", phone: "9876501003", address: "DLF Phase 3, Gurgaon", items: 2, total: "₹560", rider: "-", riderPhone: "-", status: "Preparing", orderTime: "1:30 PM", estimatedTime: "2:15 PM", progress: 15 },
@@ -40,8 +32,34 @@ const statusColor: Record<DeliveryStatus, string> = {
   Cancelled: "bg-red-100 text-red-700",
 };
 
+const nextStatus: Partial<Record<DeliveryStatus, DeliveryStatus>> = {
+  Preparing: "Picked Up",
+  "Picked Up": "On the Way",
+  "On the Way": "Delivered",
+};
+
 export default function Delivery() {
+  const [deliveries, setDeliveries] = useState(initialDeliveries);
+  const [search, setSearch] = useState("");
+
+  const filtered = deliveries.filter((d) => d.customer.toLowerCase().includes(search.toLowerCase()) || d.id.toLowerCase().includes(search.toLowerCase()));
   const active = deliveries.filter((d) => !["Delivered", "Cancelled"].includes(d.status));
+
+  const advanceStatus = (id: string) => {
+    setDeliveries((prev) => prev.map((d) => {
+      if (d.id !== id) return d;
+      const next = nextStatus[d.status];
+      if (!next) return d;
+      return { ...d, status: next, progress: next === "Delivered" ? 100 : d.progress + 25 };
+    }));
+    toast.success(`Delivery ${id} status updated`);
+  };
+
+  const cancelDelivery = (id: string) => {
+    setDeliveries((prev) => prev.map((d) => d.id === id ? { ...d, status: "Cancelled" as DeliveryStatus, progress: 0 } : d));
+    toast.error(`Delivery ${id} cancelled`);
+  };
+
   return (
     <DashboardLayout>
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
@@ -58,7 +76,7 @@ export default function Delivery() {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
           {[
             { label: "Active Deliveries", value: active.length.toString() },
-            { label: "Completed Today", value: "12" },
+            { label: "Completed Today", value: deliveries.filter((d) => d.status === "Delivered").length.toString() },
             { label: "Avg Delivery Time", value: "32 min" },
             { label: "Active Riders", value: "2" },
           ].map((s) => (
@@ -72,21 +90,30 @@ export default function Delivery() {
         <div className="flex items-center gap-3 mb-4">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search deliveries..." className="pl-9" />
+            <Input placeholder="Search deliveries..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
 
         <div className="space-y-3">
-          {deliveries.map((d, i) => (
+          {filtered.map((d, i) => (
             <motion.div key={d.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} className="bg-card rounded-xl p-4 shadow-card border border-border hover:shadow-elevated transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-mono font-bold text-primary">{d.id}</span>
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[d.status]}`}>{d.status}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  <span>ETA: {d.estimatedTime}</span>
+                <div className="flex items-center gap-2">
+                  {nextStatus[d.status] && (
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => advanceStatus(d.id)}>
+                      → {nextStatus[d.status]}
+                    </Button>
+                  )}
+                  {!["Delivered", "Cancelled"].includes(d.status) && (
+                    <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive" onClick={() => cancelDelivery(d.id)}>Cancel</Button>
+                  )}
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="w-3 h-3" /><span>ETA: {d.estimatedTime}</span>
+                  </div>
                 </div>
               </div>
 
@@ -100,11 +127,9 @@ export default function Delivery() {
                     </div>
                   </div>
                   <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
-                    <span>{d.address}</span>
+                    <MapPin className="w-3 h-3 mt-0.5 shrink-0" /><span>{d.address}</span>
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground"><Package className="w-3 h-3 inline mr-1" />{d.items} items</span>
@@ -112,11 +137,10 @@ export default function Delivery() {
                   </div>
                   {d.rider !== "-" && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Navigation className="w-3 h-3" />
-                      <span>Rider: <strong className="text-foreground">{d.rider}</strong> ({d.riderPhone})</span>
+                      <Navigation className="w-3 h-3" /><span>Rider: <strong className="text-foreground">{d.rider}</strong> ({d.riderPhone})</span>
                     </div>
                   )}
-                  {d.status !== "Cancelled" && d.status !== "Delivered" && (
+                  {!["Cancelled", "Delivered"].includes(d.status) && (
                     <div>
                       <Progress value={d.progress} className="h-1.5" />
                       <span className="text-[10px] text-muted-foreground">{d.progress}% complete</span>
