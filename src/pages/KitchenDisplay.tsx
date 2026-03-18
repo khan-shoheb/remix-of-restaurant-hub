@@ -3,20 +3,17 @@ import { motion } from "framer-motion";
 import { ChefHat, Clock, AlertCircle, CheckCircle2, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { toast } from "sonner";
 
 type KitchenStatus = "New" | "Preparing" | "Ready";
 
 interface KitchenOrder {
-  id: string;
-  table: string;
-  items: { name: string; qty: number; note?: string }[];
-  time: string;
-  elapsed: string;
-  status: KitchenStatus;
-  priority: boolean;
+  id: string; table: string; items: { name: string; qty: number; note?: string }[];
+  time: string; elapsed: string; status: KitchenStatus; priority: boolean;
 }
 
-const kitchenOrders: KitchenOrder[] = [
+const initialOrders: KitchenOrder[] = [
   { id: "K-101", table: "Table 5", items: [{ name: "Butter Chicken", qty: 2 }, { name: "Naan", qty: 4, note: "Extra butter" }, { name: "Lassi", qty: 2 }], time: "12:30 PM", elapsed: "18 min", status: "Preparing", priority: false },
   { id: "K-102", table: "Table 3", items: [{ name: "Biryani", qty: 3, note: "Extra spicy" }, { name: "Raita", qty: 3 }], time: "12:45 PM", elapsed: "8 min", status: "New", priority: true },
   { id: "K-103", table: "Delivery #45", items: [{ name: "Paneer Tikka", qty: 1 }, { name: "Dal Makhani", qty: 1 }, { name: "Rice", qty: 1 }], time: "1:00 PM", elapsed: "5 min", status: "New", priority: false },
@@ -32,6 +29,18 @@ const statusCols: { label: KitchenStatus; icon: React.ElementType; color: string
 ];
 
 export default function KitchenDisplay() {
+  const [orders, setOrders] = useState(initialOrders);
+
+  const moveOrder = (id: string, newStatus: KitchenStatus | "Served") => {
+    if (newStatus === "Served") {
+      setOrders((prev) => prev.filter((o) => o.id !== id));
+      toast.success(`${id} served and cleared!`);
+    } else {
+      setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status: newStatus } : o));
+      toast.success(`${id} moved to ${newStatus}`);
+    }
+  };
+
   return (
     <DashboardLayout>
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
@@ -44,14 +53,13 @@ export default function KitchenDisplay() {
             </div>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Clock className="w-3 h-3" />
-            <span>Auto-refreshes every 30s</span>
+            <Clock className="w-3 h-3" /><span>Auto-refreshes every 30s</span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {statusCols.map((col) => {
-            const orders = kitchenOrders.filter((o) => o.status === col.label);
+            const colOrders = orders.filter((o) => o.status === col.label);
             return (
               <div key={col.label} className={`rounded-xl border border-border border-t-4 ${col.color} bg-card shadow-card`}>
                 <div className={`px-4 py-3 flex items-center justify-between ${col.headerBg} rounded-t-lg`}>
@@ -59,26 +67,18 @@ export default function KitchenDisplay() {
                     <col.icon className="w-4 h-4 text-muted-foreground" />
                     <span className="text-sm font-semibold text-foreground">{col.label}</span>
                   </div>
-                  <Badge variant="secondary">{orders.length}</Badge>
+                  <Badge variant="secondary">{colOrders.length}</Badge>
                 </div>
                 <div className="p-3 space-y-3">
-                  {orders.map((order, i) => (
-                    <motion.div
-                      key={order.id}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      className={`bg-background rounded-lg p-3 border ${order.priority ? "border-destructive/50 ring-1 ring-destructive/20" : "border-border"}`}
-                    >
+                  {colOrders.map((order, i) => (
+                    <motion.div key={order.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                      className={`bg-background rounded-lg p-3 border ${order.priority ? "border-destructive/50 ring-1 ring-destructive/20" : "border-border"}`}>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-mono font-bold text-primary">{order.id}</span>
                           {order.priority && <span className="text-[9px] px-1 py-0.5 rounded bg-destructive/10 text-destructive font-bold uppercase">Rush</span>}
                         </div>
-                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                          <Clock className="w-3 h-3" />
-                          {order.elapsed}
-                        </div>
+                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><Clock className="w-3 h-3" />{order.elapsed}</div>
                       </div>
                       <p className="text-xs font-medium text-foreground mb-2">{order.table}</p>
                       <div className="space-y-1 mb-3">
@@ -89,9 +89,9 @@ export default function KitchenDisplay() {
                           </div>
                         ))}
                       </div>
-                      {col.label === "New" && <Button size="sm" className="w-full h-7 text-xs">Start Preparing</Button>}
-                      {col.label === "Preparing" && <Button size="sm" className="w-full h-7 text-xs" variant="outline">Mark Ready</Button>}
-                      {col.label === "Ready" && <Button size="sm" className="w-full h-7 text-xs" variant="secondary">Served ✓</Button>}
+                      {col.label === "New" && <Button size="sm" className="w-full h-7 text-xs" onClick={() => moveOrder(order.id, "Preparing")}>Start Preparing</Button>}
+                      {col.label === "Preparing" && <Button size="sm" className="w-full h-7 text-xs" variant="outline" onClick={() => moveOrder(order.id, "Ready")}>Mark Ready</Button>}
+                      {col.label === "Ready" && <Button size="sm" className="w-full h-7 text-xs" variant="secondary" onClick={() => moveOrder(order.id, "Served")}>Served ✓</Button>}
                     </motion.div>
                   ))}
                 </div>

@@ -4,7 +4,9 @@ import { Monitor, Search, Plus, Minus, Trash2, ShoppingCart } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState } from "react";
+import { toast } from "sonner";
 
 const menuCategories = ["Starters", "Main Course", "Breads", "Drinks", "Desserts"];
 
@@ -33,6 +35,8 @@ export default function POS() {
   const [activeCat, setActiveCat] = useState("All");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
+  const [payOpen, setPayOpen] = useState(false);
+  const [payMethod, setPayMethod] = useState<string>("");
 
   const filtered = posMenu.filter((m) => (activeCat === "All" || m.cat === activeCat) && m.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -42,6 +46,7 @@ export default function POS() {
       if (existing) return prev.map((c) => c.id === item.id ? { ...c, qty: c.qty + 1 } : c);
       return [...prev, { id: item.id, name: item.name, price: item.price, qty: 1 }];
     });
+    toast.success(`${item.name} added`);
   };
 
   const updateQty = (id: number, delta: number) => {
@@ -50,6 +55,15 @@ export default function POS() {
 
   const total = cart.reduce((s, c) => s + c.price * c.qty, 0);
   const tax = Math.round(total * 0.05);
+  const grandTotal = total + tax;
+
+  const handlePay = () => {
+    if (!payMethod) { toast.error("Select a payment method"); return; }
+    toast.success(`Payment of ₹${grandTotal} received via ${payMethod}!`);
+    setCart([]);
+    setPayOpen(false);
+    setPayMethod("");
+  };
 
   return (
     <DashboardLayout>
@@ -63,7 +77,6 @@ export default function POS() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Menu */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-3">
               <div className="relative flex-1">
@@ -86,7 +99,6 @@ export default function POS() {
             </div>
           </div>
 
-          {/* Cart */}
           <div className="bg-card rounded-xl shadow-card border border-border p-4 flex flex-col h-fit lg:sticky lg:top-4">
             <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
               <h3 className="font-display font-semibold text-foreground flex items-center gap-2"><ShoppingCart className="w-4 h-4" />Current Order</h3>
@@ -117,15 +129,30 @@ export default function POS() {
             <div className="space-y-1.5 pt-3 border-t border-border text-xs">
               <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>₹{total}</span></div>
               <div className="flex justify-between text-muted-foreground"><span>GST (5%)</span><span>₹{tax}</span></div>
-              <div className="flex justify-between text-base font-bold text-foreground font-display pt-2 border-t border-border"><span>Total</span><span>₹{total + tax}</span></div>
+              <div className="flex justify-between text-base font-bold text-foreground font-display pt-2 border-t border-border"><span>Total</span><span>₹{grandTotal}</span></div>
             </div>
 
             <div className="grid grid-cols-2 gap-2 mt-4">
-              <Button variant="outline" size="sm" onClick={() => setCart([])}>Clear</Button>
-              <Button size="sm" disabled={cart.length === 0}>Pay ₹{total + tax}</Button>
+              <Button variant="outline" size="sm" onClick={() => { setCart([]); toast.info("Cart cleared"); }}>Clear</Button>
+              <Button size="sm" disabled={cart.length === 0} onClick={() => setPayOpen(true)}>Pay ₹{grandTotal}</Button>
             </div>
           </div>
         </div>
+
+        <Dialog open={payOpen} onOpenChange={setPayOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Complete Payment — ₹{grandTotal}</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">{cart.length} items • Subtotal ₹{total} + GST ₹{tax}</p>
+              <div className="grid grid-cols-2 gap-2">
+                {["Cash", "UPI", "Card", "Online"].map((m) => (
+                  <button key={m} onClick={() => setPayMethod(m)} className={`p-3 rounded-lg border text-sm font-medium transition-colors ${payMethod === m ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:border-primary"}`}>{m}</button>
+                ))}
+              </div>
+              <Button className="w-full" onClick={handlePay} disabled={!payMethod}>Confirm Payment</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </motion.div>
     </DashboardLayout>
   );

@@ -1,20 +1,17 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
 import { Grid3X3 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 type TableStatus = "Available" | "Occupied" | "Reserved" | "Cleaning";
 
 interface TableInfo {
-  id: number;
-  name: string;
-  seats: number;
-  status: TableStatus;
-  guests?: number;
-  server?: string;
-  since?: string;
+  id: number; name: string; seats: number; status: TableStatus;
+  guests?: number; server?: string; since?: string;
 }
 
-const tables: TableInfo[] = [
+const initialTables: TableInfo[] = [
   { id: 1, name: "T-1", seats: 2, status: "Available" },
   { id: 2, name: "T-2", seats: 2, status: "Occupied", guests: 2, server: "Amit", since: "12:30 PM" },
   { id: 3, name: "T-3", seats: 4, status: "Occupied", guests: 4, server: "Amit", since: "1:00 PM" },
@@ -40,7 +37,30 @@ const statusStyles: Record<TableStatus, { bg: string; border: string; text: stri
   Cleaning: { bg: "bg-muted", border: "border-border", text: "text-muted-foreground", dot: "bg-muted-foreground" },
 };
 
+const nextStatusMap: Record<TableStatus, TableStatus> = {
+  Available: "Occupied",
+  Occupied: "Cleaning",
+  Cleaning: "Available",
+  Reserved: "Occupied",
+};
+
 export default function TableManagement() {
+  const [tables, setTables] = useState(initialTables);
+
+  const cycleStatus = (id: number) => {
+    setTables((prev) => prev.map((t) => {
+      if (t.id !== id) return t;
+      const next = nextStatusMap[t.status];
+      const updates: Partial<TableInfo> = { status: next };
+      if (next === "Occupied") { updates.guests = Math.floor(Math.random() * t.seats) + 1; updates.server = "Staff"; updates.since = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+      if (next === "Cleaning" || next === "Available") { updates.guests = undefined; updates.server = undefined; updates.since = next === "Available" ? undefined : t.since; }
+      return { ...t, ...updates };
+    }));
+    const table = tables.find((t) => t.id === id);
+    const next = table ? nextStatusMap[table.status] : "";
+    toast.success(`${table?.name} → ${next}`);
+  };
+
   return (
     <DashboardLayout>
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
@@ -49,12 +69,11 @@ export default function TableManagement() {
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center"><Grid3X3 className="w-5 h-5 text-primary" /></div>
             <div>
               <h1 className="text-2xl font-bold font-display text-foreground">Table Management</h1>
-              <p className="text-sm text-muted-foreground">Manage table layout and availability</p>
+              <p className="text-sm text-muted-foreground">Click a table to cycle its status</p>
             </div>
           </div>
         </div>
 
-        {/* Legend */}
         <div className="flex flex-wrap gap-4 mb-6">
           {(Object.keys(statusStyles) as TableStatus[]).map((s) => (
             <div key={s} className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -64,23 +83,17 @@ export default function TableManagement() {
           ))}
         </div>
 
-        {/* Floor Plan Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {tables.map((table, i) => {
             const st = statusStyles[table.status];
             return (
-              <motion.div
-                key={table.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.03 }}
-                className={`${st.bg} ${st.border} border-2 rounded-xl p-4 cursor-pointer hover:shadow-elevated transition-all text-center`}
-              >
+              <motion.div key={table.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.03 }}
+                onClick={() => cycleStatus(table.id)}
+                className={`${st.bg} ${st.border} border-2 rounded-xl p-4 cursor-pointer hover:shadow-elevated transition-all text-center active:scale-95`}>
                 <div className={`text-lg font-bold font-display ${st.text}`}>{table.name}</div>
                 <div className="text-xs text-muted-foreground mt-1">{table.seats} seats</div>
                 <div className={`flex items-center justify-center gap-1 mt-2 text-[10px] font-medium ${st.text}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
-                  {table.status}
+                  <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />{table.status}
                 </div>
                 {table.status === "Occupied" && (
                   <div className="mt-2 space-y-0.5 text-[10px] text-muted-foreground">

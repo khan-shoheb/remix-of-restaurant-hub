@@ -8,6 +8,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const stats = [
   { label: "Today's Revenue", value: "₹42,850", change: "+12.5%", up: true, icon: DollarSign },
@@ -16,7 +17,16 @@ const stats = [
   { label: "Avg Order Value", value: "₹1,245", change: "+5.2%", up: true, icon: TrendingUp },
 ];
 
+const quickActionRoutes: Record<string, string> = {
+  "New Order": "/pos",
+  "Add Reservation": "/reservation",
+  "View Reports": "/reports",
+  "Manage Menu": "/menu",
+};
+
 export default function Dashboard() {
+  const navigate = useNavigate();
+
   return (
     <DashboardLayout>
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -52,7 +62,7 @@ export default function Dashboard() {
             <h3 className="font-display font-semibold text-foreground mb-4">Recent Orders</h3>
             <div className="space-y-3">
               {["Table 5 - ₹2,340", "Table 12 - ₹1,890", "Delivery #45 - ₹980", "Table 3 - ₹3,200"].map((order, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0 cursor-pointer hover:bg-muted/30 rounded px-2 transition-colors" onClick={() => navigate("/orders")}>
                   <span className="text-sm text-foreground">{order}</span>
                   <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">Active</span>
                 </div>
@@ -62,9 +72,10 @@ export default function Dashboard() {
           <div className="bg-card rounded-xl p-6 shadow-card border border-border">
             <h3 className="font-display font-semibold text-foreground mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-3">
-              {["New Order", "Add Reservation", "View Reports", "Manage Menu"].map((action) => (
+              {Object.entries(quickActionRoutes).map(([action, route]) => (
                 <button
                   key={action}
+                  onClick={() => navigate(route)}
                   className="p-3 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
                 >
                   {action}
